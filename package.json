@@ -1,0 +1,6 @@
+{
+  "name": "playbook-creator-web",
+  "private": true,
+  "type": "module",
+  "description": "Browser-based editor for American (Flag) Football playbooks. Pure HTML5 + ES modules; no build step. The 'type: module' field is here only so Node-side tooling (e.g. the mcp/ server, ad-hoc model smoke tests) can import src/ files without a re-parse warning. The browser does not read this file."
+}

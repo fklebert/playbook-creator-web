@@ -42,6 +42,17 @@ function openFileLegacy(accept) {
   });
 }
 
+// Re-read a file we already have a handle for (FSA only). Returns null if no
+// handle was passed; the caller should fall back to the file picker in that
+// case. Used by File → Reload from disk to pick up edits made by the MCP
+// server (or any external process) since the playbook was loaded.
+export async function reloadFile(fileHandle) {
+  if (!fileHandle) return null;
+  const file = await fileHandle.getFile();
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  return { bytes, fileHandle, fileName: file.name };
+}
+
 export async function saveFile(bytes, suggestedName, fileHandle = null) {
   if (fileHandle) {
     const w = await fileHandle.createWritable();

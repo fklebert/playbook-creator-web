@@ -10,7 +10,7 @@ import { PlayList } from "./ui/playList.js";
 import { Inspector } from "./ui/inspector.js";
 import { buildMenubar } from "./ui/menubar.js";
 import { formDialog, listSelectDialog, checklistDialog, alertDialog, confirmDialog } from "./ui/dialogs.js";
-import { openFile, saveFile } from "./storage/fileAccess.js";
+import { openFile, saveFile, reloadFile } from "./storage/fileAccess.js";
 import { serialize, deserialize } from "./storage/sqlite.js";
 import { openPdfExportDialog } from "./ui/pdfExportDialog.js";
 import { exportWristCoachPDF } from "./export/pdfWristCoach.js";
@@ -75,6 +75,8 @@ function buildMenus() {
       { label: "Open Playbook…", shortcut: "Ctrl+Alt+O", onClick: cmdOpenPlaybook },
       { label: "Save Playbook", shortcut: "Ctrl+S", onClick: cmdSavePlaybook },
       { label: "Save Playbook As…", shortcut: "Ctrl+Alt+S", onClick: cmdSavePlaybookAs },
+      { separator: true },
+      { label: "Reload from Disk", onClick: cmdReloadFromDisk },
     ]},
     { label: "Play", items: [
       { label: "New Play…", shortcut: "Ctrl+N", onClick: cmdNewPlay },
@@ -162,6 +164,34 @@ async function cmdSavePlaybookAs() {
   } catch (e) {
     console.error(e);
     await alertDialog(`Failed to save: ${e.message || e}`, "Save Playbook As");
+  }
+}
+
+async function cmdReloadFromDisk() {
+  if (controller.dirty) {
+    if (!await confirmDialog("Discard unsaved changes and reload from disk?", "Reload")) return;
+  }
+  // If we have an FSA handle, re-read in place. Otherwise fall back to the
+  // file picker — Safari/Firefox can't persistently re-open the same file.
+  let f = null;
+  if (controller.fileHandle) {
+    try {
+      f = await reloadFile(controller.fileHandle);
+    } catch (e) {
+      console.error(e);
+      await alertDialog(`Couldn't read file: ${e.message || e}`, "Reload");
+      return;
+    }
+  } else {
+    f = await openFile();
+  }
+  if (!f) return;
+  try {
+    const pb = await deserialize(f.bytes);
+    controller.setPlaybook(pb, { fileHandle: f.fileHandle, fileName: f.fileName });
+  } catch (e) {
+    console.error(e);
+    await alertDialog(`Failed to reload: ${e.message || e}`, "Reload");
   }
 }
 

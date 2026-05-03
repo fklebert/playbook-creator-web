@@ -16,23 +16,34 @@ const SQLJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm
 const SQLJS_WASM_URL = "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.wasm";
 
 let sqlPromise = null;
+let customLoader = null;
+
+// Inject a custom sql.js loader. The browser app leaves this alone and uses
+// the default CDN <script>-tag flow. The Node MCP server installs sql.js from
+// npm and registers a loader that just returns initSqlJs() — that way the same
+// serialize/deserialize logic runs in both environments without `window`.
+export function setSqlLoader(loader) {
+  customLoader = loader;
+  sqlPromise = null;
+}
 
 async function loadSqlJs() {
   if (sqlPromise) return sqlPromise;
-  sqlPromise = (async () => {
-    if (!window.initSqlJs) {
-      await new Promise((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = SQLJS_URL;
-        s.onload = resolve;
-        s.onerror = () => reject(new Error("Failed to load sql.js"));
-        document.head.appendChild(s);
-      });
-    }
-    const SQL = await window.initSqlJs({ locateFile: () => SQLJS_WASM_URL });
-    return SQL;
-  })();
+  sqlPromise = (customLoader || defaultBrowserLoader)();
   return sqlPromise;
+}
+
+async function defaultBrowserLoader() {
+  if (!globalThis.initSqlJs) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = SQLJS_URL;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Failed to load sql.js"));
+      document.head.appendChild(s);
+    });
+  }
+  return globalThis.initSqlJs({ locateFile: () => SQLJS_WASM_URL });
 }
 
 const SCHEMA_SQL = `

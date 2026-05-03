@@ -1,0 +1,21 @@
+{
+  "name": "playbook-creator-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Playbook Creator: lets an AI agent read and author American flag football playbooks stored as .pbc.sqlite files.",
+  "type": "module",
+  "license": "GPL-3.0-or-later",
+  "main": "server.js",
+  "bin": {
+    "playbook-creator-mcp": "./server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test 'test/**/*.test.js'"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "sql.js": "^1.10.3"
+  }
+}

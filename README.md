@@ -28,10 +28,16 @@ Or:
 npx serve .
 ```
 
-There is **no build step** and **no `npm install`**. The two runtime
-libraries — `sql.js` (for SQLite persistence) and `jsPDF` (for the PDF
-export) — load lazily from a CDN the first time you save a playbook or
-print a wrist coach. Once cached, the app works fully offline.
+There is **no build step** and **no `npm install`** for the web app.
+The two runtime libraries — `sql.js` (for SQLite persistence) and
+`jsPDF` (for the PDF export) — load lazily from a CDN the first time
+you save a playbook or print a wrist coach. Once cached, the app works
+fully offline.
+
+The optional MCP server in [`mcp/`](mcp/) is the one place a Node
+toolchain enters the project, isolated to that folder. The web app does
+not depend on it. See [AI agent integration](#ai-agent-integration-optional)
+below.
 
 ### Hosting
 
@@ -140,8 +146,11 @@ what's the same and what's not.
   10% of the canvas height — same proportions, same gray.
 - Default playbook: 14 routes (Hook, Comeback, 5/10 In/Out, Slant,
   Shallow, Curl, Post, Corner, Fly, Seam, Fade) and the Spread Right
-  formation, with 5/7/9/11-player variants — values match the original
-  exactly.
+  formation, with 5/7/9/11-player variants — route values and
+  positions match the original exactly. (One naming deviation: the 5p
+  formation labels the slot at +5 yards as `SRR` (Slot Receiver Right)
+  rather than the original's `HB`, since the player lines up on the
+  LOS, not behind it. The position itself is unchanged.)
 - Player counts: 5, 7, 9, or 11; fixed at playbook creation.
 - Wrist-coach layout: configurable rows × cols × paper × margins, with
   the same auto-sizing math (`scale = 0.025`) when paper is left at 0.
@@ -178,6 +187,42 @@ this rewrite small and focused:
 - **Mailing list / native auto-updater integration.**
 
 If any of these matter to you, please open an issue.
+
+---
+
+## AI agent integration (optional)
+
+This repo includes a small **Model Context Protocol (MCP) server** in
+[`mcp/`](mcp/) that lets an AI agent (Claude Desktop, Claude Code, or
+any MCP-compatible client) read and author plays in your `.pbc.sqlite`
+files. It reuses the web app's model and storage layer directly, so the
+agent sees exactly the same playbook the editor does.
+
+Two scenarios it's designed for:
+
+- **Authoring.** A coach asks the agent to compose new plays — *"Add
+  three dagger concepts using the routes already in the library, out of
+  Spread Right, and tag them as Pass."* — and the agent writes them
+  back to the file.
+- **Study.** A QB or position coach asks about plays — *"Walk me
+  through Smash Right. What's the progression if the corner sits?"* —
+  using the same server in `--read-only` mode.
+
+The workflow:
+
+1. Coach designs plays in the browser, hits **Save**.
+2. Agent reads/edits the file via MCP.
+3. Coach picks **File → Reload from Disk** to see the changes.
+
+The MCP server is a Node process launched per-conversation by the MCP
+client (no daemon, no Docker, no hosted backend — same offline-first
+ethos as the rest of the project). It captures the file's mtime when
+it loads and refuses to save if the file has been modified externally
+since, so concurrent edits in the browser don't get clobbered silently.
+
+Setup, the Claude Desktop config snippet, and the full tool surface
+(read tools always available; write tools omitted in `--read-only`) live
+in [`mcp/README.md`](mcp/README.md).
 
 ---
 
@@ -231,7 +276,7 @@ Issues and pull requests are welcome. The codebase is small and aims to
 stay that way:
 
 ```
-src/
+src/                          # browser app — pure HTML5, no build
 ├── main.js                   # boot, command dispatch, keyboard shortcuts
 ├── controller.js             # active-playbook + active-play state
 ├── data/defaultPlaybook.js   # 14 default routes, Spread Right formation
@@ -242,8 +287,18 @@ src/
 │                             # context menu, PDF export dialog
 ├── storage/                  # sql.js wrapper + File System Access
 └── export/                   # jsPDF wrist-coach exporter
+
+mcp/                          # optional MCP server (Node, isolated)
+├── createServer.js           # factory: load file, register tools, save
+├── server.js                 # stdio CLI entry
+├── tools/{read,write}.js     # the agent-facing tool surface
+├── describe.js               # LLM-friendly text rendering of plays
+├── colors.js                 # named palette + parsing
+└── test/                     # node --test, in-memory MCP transport
 ```
 
-No bundler, no transpiler, no test framework — just files. If you'd
-like to add tests, vanilla `node --test` against the `src/models/`
-files works without extra setup.
+No bundler or transpiler. The browser app has no formal test suite —
+syntax-check with `find src -name "*.js" -exec node --check {} \;` and
+spot-check pure-JS models with `node --input-type=module -e ...`. The
+MCP server has tests (model round-trip, describe snapshots, tool
+surface, save/reload): `cd mcp && npm test`.

@@ -74,7 +74,7 @@ export function defaultSpreadRight(playerNumber) {
     P({ fullName: "Quarterback", shortName: "QB" }, 0, -5),
     P({ fullName: "Wide Receiver Left", shortName: "WRL" }, -10, 0),
     P({ fullName: "Wide Receiver Right", shortName: "WRR" }, 10, 0),
-    P({ fullName: "Halfback", shortName: "HB" }, 5, 0),
+    P({ fullName: "Slot Receiver Right", shortName: "SRR" }, 5, 0),
   ];
   if (playerNumber >= 7) {
     players.push(P({ fullName: "Left Guard", shortName: "LG" }, -1, 0));
