@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Playbook Creator</title>
+  <link rel="stylesheet" href="./styles/app.css" />
+</head>
+<body>
+  <header id="menubar" class="menubar"></header>
+
+  <main id="app" class="app">
+    <aside id="play-list" class="sidebar">
+      <div class="sidebar-header">
+        <h2>Plays</h2>
+        <input type="search" id="play-search" placeholder="Filter…" />
+      </div>
+      <select id="category-filter">
+        <option value="">All categories</option>
+      </select>
+      <ul id="play-list-items" class="play-list-items"></ul>
+    </aside>
+
+    <section id="canvas-wrap" class="canvas-wrap">
+      <div id="canvas-host" class="canvas-host"></div>
+      <div id="canvas-status" class="canvas-status"></div>
+    </section>
+
+    <aside id="inspector" class="inspector">
+      <section class="inspector-section">
+        <h2>Play</h2>
+        <div id="play-info" class="play-info"></div>
+      </section>
+      <section class="inspector-section">
+        <h2>Player</h2>
+        <div id="player-info" class="player-info">
+          <p class="muted">Click a player to inspect.</p>
+        </div>
+      </section>
+      <section class="inspector-section">
+        <h2>Routes</h2>
+        <ul id="route-library" class="route-library"></ul>
+      </section>
+    </aside>
+  </main>
+
+  <!-- Dialog host: dialogs are appended here by ui/dialogs.js -->
+  <div id="dialog-host"></div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

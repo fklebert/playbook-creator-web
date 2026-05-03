@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Optional local server / build artifacts (none expected today, but future-proofing)
+node_modules/
+dist/
+.cache/
+
+# Local user files
+*.pbc.sqlite
+
+# AI agents
+CLAUDE.md
+AGENTS.md
