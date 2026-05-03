@@ -195,6 +195,67 @@ test("add_library_route adds, rejects duplicate", async () => {
   assert.equal(dup.isError, true);
 });
 
+test("create_formation adds a formation; rejects duplicates, role dupes, wrong player count", async () => {
+  const { client, getPlaybook } = await makeWired();
+
+  // Happy path: 5-player Spread Right TE variant
+  await client.callTool({
+    name: "create_formation",
+    arguments: {
+      name: "Spread Right TE",
+      players: [
+        { role: "C",   fullName: "Center",              x: 0,   y: 0 },
+        { role: "QB",  fullName: "Quarterback",         x: 0,   y: -3 },
+        { role: "WRL", fullName: "Wide Receiver Left",  x: -10, y: 0 },
+        { role: "TER", fullName: "Tight End Right",     x: 3,   y: 0 },
+        { role: "WRR", fullName: "Wide Receiver Right", x: 10,  y: 0 },
+      ],
+    },
+  });
+  const pb = getPlaybook();
+  const f = pb.getFormation("Spread Right TE");
+  assert.ok(f);
+  assert.equal(f.players.length, 5);
+  assert.ok(f.players.find((p) => p.role.shortName === "TER"));
+
+  // Duplicate name
+  const dup = await client.callTool({
+    name: "create_formation",
+    arguments: {
+      name: "Spread Right TE",
+      players: f.players.map((p) => ({ role: p.role.shortName, x: p.pos.x, y: p.pos.y })),
+    },
+  });
+  assert.equal(dup.isError, true);
+
+  // Wrong player count
+  const wrong = await client.callTool({
+    name: "create_formation",
+    arguments: {
+      name: "Tiny", players: [{ role: "C", x: 0, y: 0 }],
+    },
+  });
+  assert.equal(wrong.isError, true);
+  assert.match(wrong.content[0].text, /must have 5 players/);
+
+  // Duplicate role within the formation
+  const dupRole = await client.callTool({
+    name: "create_formation",
+    arguments: {
+      name: "Bad",
+      players: [
+        { role: "C",   x: 0, y: 0 },
+        { role: "QB",  x: 0, y: -3 },
+        { role: "WRL", x: -10, y: 0 },
+        { role: "WRL", x: -8, y: 0 },
+        { role: "WRR", x: 10, y: 0 },
+      ],
+    },
+  });
+  assert.equal(dupRole.isError, true);
+  assert.match(dupRole.content[0].text, /Duplicate role/);
+});
+
 test("add_library_formation_from_play strips routes, motion, numbers", async () => {
   const { client, getPlaybook } = await makeWired();
   await client.callTool({

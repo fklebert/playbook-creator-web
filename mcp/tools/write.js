@@ -316,6 +316,53 @@ export function registerWriteTools(server, getPlaybook, save) {
     return ok({ added: name, segments: paths.length });
   });
 
+  server.registerTool("create_formation", {
+    title: "Create formation",
+    description:
+      "Add a new formation to the library directly. Each player has a role " +
+      "(shortName, e.g. 'WRR', 'TER', 'QB') with optional fullName, position " +
+      "in yards, and optional color. Player roles must be unique within the " +
+      "formation, and the player count must match the playbook (playerNumber).",
+    inputSchema: {
+      name: z.string().min(1),
+      players: z.array(z.object({
+        role: z.string().describe("Role shortName, e.g. 'WRR', 'TER'"),
+        fullName: z.string().optional(),
+        x: z.number(),
+        y: z.number(),
+        color: colorInput.optional(),
+      })).min(1),
+    },
+  }, async ({ name, players }) => {
+    const pb = getPlaybook();
+    if (pb.formations.has(name)) {
+      throw new Error(`A formation named "${name}" already exists.`);
+    }
+    if (players.length !== pb.playerNumber) {
+      throw new Error(
+        `Formation must have ${pb.playerNumber} players (the playbook is ` +
+        `${pb.playerNumber}-on-${pb.playerNumber}); got ${players.length}.`,
+      );
+    }
+    const seen = new Set();
+    for (const p of players) {
+      if (seen.has(p.role)) {
+        throw new Error(`Duplicate role "${p.role}" — formation roles must be unique.`);
+      }
+      seen.add(p.role);
+    }
+    const playerObjs = players.map((p) => {
+      const rgb = p.color ? parseColorInput(p.color) : { r: 0, g: 0, b: 0 };
+      return new Player({
+        role: { shortName: p.role, fullName: p.fullName || p.role },
+        pos: { x: snapHalf(p.x), y: snapHalf(p.y) },
+        color: new Color(rgb.r, rgb.g, rgb.b),
+      });
+    });
+    pb.addFormation(new Formation(name, playerObjs));
+    return ok({ added: name, players: players.length });
+  });
+
   server.registerTool("add_library_formation_from_play", {
     title: "Add library formation from play",
     description:
